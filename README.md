@@ -7,7 +7,8 @@ A C project built with Make, set up to run inside a Dev Container.
 ```
 .
 ├── .devcontainer/
-│   └── devcontainer.json   # Dev Container definition (Ubuntu + GCC + Make)
+│   ├── Dockerfile          # Container image (Ubuntu + GCC + Make + tooling)
+│   └── devcontainer.json   # Dev Container definition
 ├── include/                # Public headers
 │   └── app.h
 ├── src/                    # Source files
@@ -21,7 +22,9 @@ A C project built with Make, set up to run inside a Dev Container.
 
 Open the folder in VS Code / Cursor and choose **Reopen in Container**
 (or run *Dev Containers: Reopen in Container* from the command palette).
-The container image ships with GCC and Make preinstalled.
+The image is built from `.devcontainer/Dockerfile` and ships with GCC, Make,
+GDB, Valgrind, cppcheck, and clang-tidy. Add more packages to the Dockerfile
+(e.g. a cross-compiler toolchain) as the project grows.
 
 ## Building
 

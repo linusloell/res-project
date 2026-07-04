@@ -1,6 +1,9 @@
 {
   "name": "res-project (C)",
-  "image": "mcr.microsoft.com/devcontainers/cpp:ubuntu-24.04",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
