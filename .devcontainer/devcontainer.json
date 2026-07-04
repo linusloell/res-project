@@ -1,0 +1,25 @@
+{
+  "name": "res-project (C)",
+  "image": "mcr.microsoft.com/devcontainers/cpp:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "upgradePackages": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.makefile-tools"
+      ],
+      "settings": {
+        "C_Cpp.default.cStandard": "c11",
+        "C_Cpp.default.includePath": ["${workspaceFolder}/include"],
+        "makefile.configureOnOpen": false
+      }
+    }
+  },
+  "postCreateCommand": "gcc --version && make --version",
+  "remoteUser": "vscode"
+}
