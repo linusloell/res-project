@@ -34,6 +34,8 @@ struct sim {
     bool running;
     bool emergency_active;
 
+    uint64_t deadline_misses;
+
     uint64_t random_state; //pseudo random generator
     uint64_t next_car_tick;
     uint64_t next_ev_tick;

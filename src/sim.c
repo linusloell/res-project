@@ -1,11 +1,12 @@
 #include "sim.h"
 #include "my.h"
 #include "random_gen.h"
+#include "rt.h"
 
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <errno.h>
 
 static void print_tick(const sim_snapshot_t *snap) {
     printf("tick %3" PRIu64 "  ", snap->tick);
@@ -63,7 +64,7 @@ int sim_snapshot(const sim_t *s, sim_snapshot_t *out) {
 
     out->tick = s->tick;
     out->emergency_active = s->emergency_active;
-    out->deadline_misses = 0;
+    out->deadline_misses = s->deadline_misses;
 
     for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
         for (int a = 0; a < SIM_LIGHTS_PER_INTERSECTION; a++) {
@@ -109,26 +110,29 @@ int sim_run(sim_t *s, uint64_t ticks, uint64_t seed) {
     thread_args_t inter_args[SIM_NUM_INTERSECTIONS];
     for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
         inter_args[i] = (thread_args_t){ .sim = s, .index = i };
-        pthread_create(&s->intersection_threads[i], NULL,
-                       intersection_thread_fn, &inter_args[i]);
+        rt_thread_create(&s->intersection_threads[i], RT_PRIO_LIGHT, intersection_thread_fn, &inter_args[i]);
     }
 
     // create car threads
     thread_args_t car_args[SIM_MAX_CARS];
     for (int i = 0; i < SIM_MAX_CARS; i++) {
         car_args[i] = (thread_args_t){ .sim = s, .index = i };
-        pthread_create(&s->car_threads[i], NULL, car_thread_fn, &car_args[i]);
+        rt_thread_create(&s->car_threads[i], RT_PRIO_CAR, car_thread_fn, &car_args[i]);
     }
 
     // create ev threads
     thread_args_t ev_args[SIM_MAX_EMERGENCY_VEHICLES];
     for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) {
         ev_args[i] = (thread_args_t){ .sim = s, .index = i };
-        pthread_create(&s->ev_threads[i], NULL, ev_thread_fn, &ev_args[i]);
+        rt_thread_create(&s->ev_threads[i], RT_PRIO_EV, ev_thread_fn, &ev_args[i]);
     }
 
     // tick loop
+    struct timespec next;
+    clock_gettime(CLOCK_MONOTONIC, &next);
     for (uint64_t tick = 1; tick <= ticks; tick++) {
+        while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL) == EINTR);
+
         pthread_mutex_lock(&s->lock);
 
         if (tick >= s->next_car_tick) {
@@ -168,6 +172,18 @@ int sim_run(sim_t *s, uint64_t ticks, uint64_t seed) {
         pthread_mutex_unlock(&s->lock);
 
         print_tick(&snapshot);
+
+        next.tv_nsec += TICK_NS;
+        if (next.tv_nsec >= 1000000000L) { next.tv_nsec -= 1000000000L; next.tv_sec++; }
+        
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        if (now.tv_sec > next.tv_sec ||
+            (now.tv_sec == next.tv_sec && now.tv_nsec > next.tv_nsec)) {
+            pthread_mutex_lock(&s->lock);
+            s->deadline_misses++;
+            pthread_mutex_unlock(&s->lock);
+        }
     }
 
     pthread_mutex_lock(&s->lock);
