@@ -1,9 +1,9 @@
 # ---- Configuration --------------------------------------------------------
-TARGET   := res-project
+TARGET   := sim
 CC       := gcc
 CSTD     := c11
-CFLAGS   := -std=$(CSTD) -Wall -Wextra -Wpedantic -Iinclude
-LDFLAGS  :=
+CFLAGS   := -std=c11 -Wall -Wextra -Iinclude -D_POSIX_C_SOURCE=200809L
+LDFLAGS  := -pthread
 
 SRC_DIR   := src
 BUILD_DIR := build
