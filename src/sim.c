@@ -2,6 +2,7 @@
 #include "my.h"
 #include "random_gen.h"
 #include "rt.h"
+#include "render.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -171,7 +172,7 @@ int sim_run(sim_t *s, uint64_t ticks, uint64_t seed) {
         sim_snapshot(s, &snapshot);
         pthread_mutex_unlock(&s->lock);
 
-        print_tick(&snapshot);
+        render_frame(&snapshot);
 
         next.tv_nsec += TICK_NS;
         if (next.tv_nsec >= 1000000000L) { next.tv_nsec -= 1000000000L; next.tv_sec++; }

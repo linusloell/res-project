@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "./sim.h"
+#include "./render.h"
 
 static void usage(const char *prog) {
    fprintf(stderr, "usage: %s [--ticks N] [--seed N]\n"
@@ -33,6 +34,7 @@ int main(int argc, char **argv) {
     }
 
     sim_run(&sim, ticks, seed);
+    render_shutdown();
 
     sim_snapshot_t snapshot;
     sim_snapshot(&sim, &snapshot);

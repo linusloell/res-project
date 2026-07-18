@@ -4,7 +4,7 @@
 #include "sim_state.h"
 #include <stdint.h>
 
-#define LIGHT_PHASE_TICKS 2
+#define LIGHT_PHASE_TICKS 10
 
 typedef enum { PHASE_NS_GREEN = 0, PHASE_EW_GREEN = 1 } phase_t;
 

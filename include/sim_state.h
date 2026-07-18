@@ -4,7 +4,11 @@
     #include <stdint.h>
     #include <stdbool.h>
 
-    #define SIM_NUM_INTERSECTIONS       4
+    /* Intersections are laid out on a grid of vertical x horizontal roads;
+     * each road crossing is one intersection. */
+    #define SIM_NUM_V_ROADS             2
+    #define SIM_NUM_H_ROADS             2
+    #define SIM_NUM_INTERSECTIONS       (SIM_NUM_V_ROADS * SIM_NUM_H_ROADS)
     #define SIM_LIGHTS_PER_INTERSECTION 4
     #define SIM_NUM_LIGHTS (SIM_NUM_INTERSECTIONS * SIM_LIGHTS_PER_INTERSECTION)
     #define SIM_MAX_CARS                16
