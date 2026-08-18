@@ -14,8 +14,13 @@
  * Each intersection is the crossing of a vertical road (channel 4 cells wide,
  * bordered by '|') and a horizontal road (2 lanes tall, bordered by '='). */
 
-#define GRID_W 80
-#define GRID_H 25
+/* Logical-to-render scale: one logical lane cell maps to 3 columns x 2 rows. */
+#define LOGIC_COL_SCALE 3
+#define LOGIC_ROW_SCALE 2
+
+/* Large enough so max route lengths fit without being clamped into borders. */
+#define GRID_W 90
+#define GRID_H 60
 #define NCOLS  SIM_NUM_V_ROADS
 #define NROWS  SIM_NUM_H_ROADS
 
@@ -69,6 +74,7 @@ static void layout_init(void) {
 #define C_MOVING "\033[32m"   /* green car */
 #define C_WAIT   "\033[33m"   /* yellow car (stopped at light) */
 #define C_FREEZE "\033[35m"   /* magenta car (emergency freeze) */
+#define C_CROSS  "\033[1;32m" /* bright green car (crossing the box) */
 #define C_EV     "\033[1;31m" /* bold red emergency vehicle */
 #define C_HEADER "\033[1;36m" /* cyan header */
 
@@ -132,16 +138,16 @@ static void draw_roads(const sim_snapshot_t *snap) {
             put(bot, right, GL_C_DR, C_ROAD);
 
             if (ns_green) {
-                /* N/S flowing: stripe the E/W stop lines on top & bottom. */
-                for (int c = left + 1; c < right; c++) {
-                    put(top, c, GL_X, C_XRED);
-                    put(bot, c, GL_X, C_XRED);
-                }
-            } else {
-                /* E/W flowing: stripe the N/S stop lines on the sides. */
+                /* N/S flowing: stripe the E/W stop lines on the sides. */
                 for (int r = top + 1; r < bot; r++) {
                     put(r, left,  GL_X, C_XRED);
                     put(r, right, GL_X, C_XRED);
+                }
+            } else {
+                /* E/W flowing: stripe the N/S stop lines on top & bottom. */
+                for (int c = left + 1; c < right; c++) {
+                    put(top, c, GL_X, C_XRED);
+                    put(bot, c, GL_X, C_XRED);
                 }
             }
         }
@@ -159,6 +165,8 @@ static const char *car_color(car_state_t st) {
         case CAR_MOVING:            return C_MOVING;
         case CAR_STOPPED_LIGHT:     return C_WAIT;
         case CAR_STOPPED_EMERGENCY: return C_FREEZE;
+        case CAR_CROSSING:          return C_CROSS;
+        case CAR_EXITING:           return C_MOVING;
         default:                    return C_MOVING;
     }
 }
@@ -168,6 +176,12 @@ static void draw_hcar(int row, int head_col, const char *color) {
     put(row, head_col - 2, GL_HCAR_E, color);
     put(row, head_col - 1, GL_HCAR_M, color);
     put(row, head_col,     GL_HCAR_E, color);
+}
+
+/* Draw a 2-tall vertical sprite to match the logic-cell row scale. */
+static void draw_vcar(int head_row, int col, const char *color) {
+    put(head_row - 1, col, GL_VCAR, color);
+    put(head_row,     col, GL_VCAR, color);
 }
 
 static void draw_cars(const sim_snapshot_t *snap) {
@@ -182,24 +196,76 @@ static void draw_cars(const sim_snapshot_t *snap) {
         int pos  = c->position;
         const char *col = car_color(c->state);
 
+        if (c->state == CAR_EXITING) {
+            int right = left + VROAD_W - 1;
+            switch (c->approach) {
+                case APPROACH_N: { /* leaving below the box */
+                    int seg_bot = (j == NROWS - 1) ? (GRID_H - 1)
+                                                   : (HROAD_T[j + 1] - 1);
+                    int stop = bot + 1;
+                    int row = clampi(stop + pos * LOGIC_ROW_SCALE, stop, seg_bot);
+                    draw_vcar(row, left + 1, col);
+                    break;
+                }
+                case APPROACH_S: { /* leaving above the box */
+                    int seg_top = (j == 0) ? 0 : (HROAD_T[j - 1] + HROAD_H);
+                    int stop = top - 1;
+                    int row = clampi(stop - pos * LOGIC_ROW_SCALE, seg_top, stop);
+                    draw_vcar(row, left + 3, col);
+                    break;
+                }
+                case APPROACH_W: { /* leaving right of the box */
+                    int seg_right = (i == NCOLS - 1) ? (GRID_W - 1)
+                                                     : (VROAD_L[i + 1] - 1);
+                    int stop = right + 1;
+                    int head = clampi(stop + pos * LOGIC_COL_SCALE, stop, seg_right - 2);
+                    draw_hcar(top + 1, head + 2, col);
+                    break;
+                }
+                case APPROACH_E: { /* leaving left of the box */
+                    int seg_left = (i == 0) ? 0 : (VROAD_L[i - 1] + VROAD_W);
+                    int stop = left - 1;
+                    int head = clampi(stop - pos * LOGIC_COL_SCALE, seg_left + 2, stop);
+                    draw_hcar(bot - 1, head, col);
+                    break;
+                }
+            }
+            continue;
+        }
+
+        /* Mid-crossing: the car sits inside the intersection box, on the lane
+         * matching its heading, rather than on an approach segment. */
+        if (c->state == CAR_CROSSING) {
+            int right = left + VROAD_W - 1;
+            switch (c->approach) {
+                case APPROACH_N: draw_vcar(top + 2, left + 1, col);    break;
+                case APPROACH_S: draw_vcar(top + 1, left + 3, col);    break;
+                case APPROACH_W: draw_hcar(top + 1, left + 4, col);    break;
+                case APPROACH_E: draw_hcar(bot - 1, right - 1, col);   break;
+            }
+            continue;
+        }
+
         switch (c->approach) {
             case APPROACH_N: { /* above the box, southbound lane */
                 int seg_top = (j == 0) ? 0 : (HROAD_T[j - 1] + HROAD_H);
                 int stop = top - 1;
-                put(clampi(stop - pos, seg_top, stop), left + 1, GL_VCAR, col);
+                int row = clampi(stop - pos * LOGIC_ROW_SCALE, seg_top, stop);
+                draw_vcar(row, left + 1, col);
                 break;
             }
             case APPROACH_S: { /* below the box, northbound lane */
                 int seg_bot = (j == NROWS - 1) ? (GRID_H - 1)
                                                : (HROAD_T[j + 1] - 1);
                 int stop = bot + 1;
-                put(clampi(stop + pos, stop, seg_bot), left + 3, GL_VCAR, col);
+                int row = clampi(stop + pos * LOGIC_ROW_SCALE, stop, seg_bot);
+                draw_vcar(row, left + 3, col);
                 break;
             }
             case APPROACH_W: { /* left of the box, eastbound lane */
                 int seg_left = (i == 0) ? 0 : (VROAD_L[i - 1] + VROAD_W);
                 int stop = left - 1;
-                int head = clampi(stop - pos, seg_left + 2, stop);
+                int head = clampi(stop - pos * LOGIC_COL_SCALE, seg_left + 2, stop);
                 draw_hcar(top + 1, head, col);
                 break;
             }
@@ -207,7 +273,7 @@ static void draw_cars(const sim_snapshot_t *snap) {
                 int seg_right = (i == NCOLS - 1) ? (GRID_W - 1)
                                                  : (VROAD_L[i + 1] - 1);
                 int stop = left + VROAD_W;
-                int head = clampi(stop + pos, stop, seg_right - 2);
+                int head = clampi(stop + pos * LOGIC_COL_SCALE, stop, seg_right - 2);
                 draw_hcar(bot - 1, head + 2, col);
                 break;
             }
@@ -227,7 +293,8 @@ static void draw_evs(const sim_snapshot_t *snap) {
         int seg_top = (j == 0) ? 0 : (HROAD_T[j - 1] + HROAD_H);
         int stop = top - 1;
         /* EVs have no approach; show them descending in the middle lane. */
-        put(clampi(stop - e->position, seg_top, stop), left + 2, GL_EV, C_EV);
+        int row = clampi(stop - e->position * LOGIC_ROW_SCALE, seg_top, stop);
+        put(row, left + 2, GL_EV, C_EV);
     }
 }
 

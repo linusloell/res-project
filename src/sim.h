@@ -29,6 +29,7 @@ struct sim {
     pthread_cond_t tick_start;
     pthread_cond_t tick_done;
     uint64_t tick;
+    uint64_t total_ticks;   /* how many ticks the controller must run */
     int arrived;
     int n_workers;
     bool running;
@@ -45,6 +46,7 @@ struct sim {
     car_t cars[SIM_MAX_CARS];
     ev_t evs[SIM_MAX_EMERGENCY_VEHICLES];
 
+    pthread_t controller_thread;
     pthread_t intersection_threads[SIM_NUM_INTERSECTIONS];
     pthread_t car_threads[SIM_MAX_CARS];
 

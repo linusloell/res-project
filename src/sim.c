@@ -101,6 +101,7 @@ int sim_snapshot(const sim_t *s, sim_snapshot_t *out) {
 int sim_run(sim_t *s, uint64_t ticks, uint64_t seed) {
 
     s->running = true;
+    s->total_ticks = ticks;
     s->n_workers = SIM_NUM_INTERSECTIONS + SIM_MAX_CARS;
 
     s->random_state = seed ? seed : 1;
@@ -128,72 +129,12 @@ int sim_run(sim_t *s, uint64_t ticks, uint64_t seed) {
         rt_thread_create(&s->ev_threads[i], RT_PRIO_EV, ev_thread_fn, &ev_args[i]);
     }
 
-    // tick loop
-    struct timespec next;
-    clock_gettime(CLOCK_MONOTONIC, &next);
-    for (uint64_t tick = 1; tick <= ticks; tick++) {
-        while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL) == EINTR);
+    /* Controller: highest priority, owns the tick clock and the UI.
+     * It flips s->running to false on its own once the run is over. */
+    thread_args_t ctrl_args = { .sim = s, .index = 0 };
+    rt_thread_create(&s->controller_thread, RT_PRIO_CONTROLLER, controller_thread_fn, &ctrl_args);
 
-        pthread_mutex_lock(&s->lock);
-
-        if (tick >= s->next_car_tick) {
-            try_spawn_car(s);
-            s->next_car_tick = tick + rng_range(&s->random_state, CAR_MIN_SPAWN_TICKS, CAR_MAX_SPAWN_TICKS);
-        }
-        if (tick >= s->next_ev_tick) {
-            try_dispatch_ev(s);
-            s->next_ev_tick = tick + rng_range(&s->random_state, EV_MIN_SPAWN_TICKS, EV_MAX_SPAWN_TICKS);
-        }
-
-        //freeze ligth/car state and nbr of worker, for current tick
-        int n_active_evs = 0;
-        for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) {
-            if (s->evs[i].active) n_active_evs++;
-        }
-        s->emergency_active = (n_active_evs > 0);
-        s->n_workers = SIM_NUM_INTERSECTIONS + SIM_MAX_CARS + n_active_evs;
-
-        for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
-            for (int a = 0; a < SIM_LIGHTS_PER_INTERSECTION; a++) {
-                s->colors[i * SIM_LIGHTS_PER_INTERSECTION + a] =
-                    traffic_light_color(&s->intersections[i], (approach_t)a);
-            }
-        }
-
-        s->arrived = 0;
-        s->tick    = tick;
-        pthread_cond_broadcast(&s->tick_start);
-
-        while (s->arrived < s->n_workers) {
-            pthread_cond_wait(&s->tick_done, &s->lock);
-        }
-
-        sim_snapshot_t snapshot;
-        sim_snapshot(s, &snapshot);
-        pthread_mutex_unlock(&s->lock);
-
-        render_frame(&snapshot);
-
-        next.tv_nsec += TICK_NS;
-        if (next.tv_nsec >= 1000000000L) { next.tv_nsec -= 1000000000L; next.tv_sec++; }
-        
-        struct timespec now;
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        if (now.tv_sec > next.tv_sec ||
-            (now.tv_sec == next.tv_sec && now.tv_nsec > next.tv_nsec)) {
-            pthread_mutex_lock(&s->lock);
-            s->deadline_misses++;
-            pthread_mutex_unlock(&s->lock);
-        }
-    }
-
-    pthread_mutex_lock(&s->lock);
-    s->running = false;
-    pthread_cond_broadcast(&s->tick_start); 
-    for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) {
-        pthread_cond_broadcast(&s->ev_dispatch_cv[i]);
-    }
-    pthread_mutex_unlock(&s->lock);
+    pthread_join(s->controller_thread, NULL);
 
     for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
         pthread_join(s->intersection_threads[i], NULL);

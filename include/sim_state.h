@@ -23,7 +23,9 @@
         CAR_INACTIVE = 0,
         CAR_MOVING,
         CAR_STOPPED_LIGHT,
-        CAR_STOPPED_EMERGENCY
+        CAR_STOPPED_EMERGENCY,
+        CAR_CROSSING,         /* inside the intersection box, clearing it */
+        CAR_EXITING           /* leaving the grid after the final crossing */
     } car_state_t;
 
     typedef struct {
