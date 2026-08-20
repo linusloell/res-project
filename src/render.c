@@ -18,9 +18,9 @@
 #define LOGIC_COL_SCALE 3
 #define LOGIC_ROW_SCALE 2
 
-/* Large enough so max route lengths fit without being clamped into borders. */
-#define GRID_W 90
-#define GRID_H 60
+/* Compact road layout with reduced inter-road spacing. */
+#define GRID_W 70
+#define GRID_H 45
 #define NCOLS  SIM_NUM_V_ROADS
 #define NROWS  SIM_NUM_H_ROADS
 
