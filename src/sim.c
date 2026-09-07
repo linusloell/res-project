@@ -9,34 +9,6 @@
 #include <string.h>
 #include <errno.h>
 
-static void print_tick(const sim_snapshot_t *snap) {
-    printf("tick %3" PRIu64 "  ", snap->tick);
-
-    for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
-        if (i) putchar('|');
-        for (int a = 0; a < SIM_LIGHTS_PER_INTERSECTION; a++) {
-            light_color_t color = snap->lights[i * SIM_LIGHTS_PER_INTERSECTION + a];
-            putchar(color == LIGHT_GREEN ? 'G' : '.');
-        }
-    }
-
-    printf("   ");
-    for (int i = 0; i < snap->num_cars; i++) {
-        const car_snapshot_t *c = &snap->cars[i];
-        if (!c->active) continue;
-        char st = (c->state == CAR_MOVING)            ? 'm'
-                : (c->state == CAR_STOPPED_LIGHT)     ? 's'
-                : (c->state == CAR_STOPPED_EMERGENCY) ? 'E' : '?';
-        printf("%d:%c%d%c ", c->intersection_id, "NESW"[c->approach], c->position, st);
-    }
-    for (int i = 0; i < snap->num_evs; i++) {
-        const emergency_snapshot_t *e = &snap->evs[i];
-        if (e->active) printf(" EV%d@i%d:%d", i, e->intersection_id, e->position);
-    }
-    if (snap->emergency_active) printf("  [FREEZE]");
-    putchar('\n');
-}
-
 int sim_init(sim_t *s) {
     memset(s, 0, sizeof *s);
     pthread_mutex_init(&s->lock, NULL);
