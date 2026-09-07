@@ -42,13 +42,22 @@ void *controller_thread_fn(void *arg) {
             try_spawn_car(s);
             s->next_car_tick = tick + rng_range(&s->random_state, CAR_MIN_SPAWN_TICKS, CAR_MAX_SPAWN_TICKS);
         }
-        /* Temporarily disable emergency vehicle dispatch while debugging
-         * vehicle movement/rendering behavior. */
-
+        if (tick >= s->next_ev_tick) {
+            try_dispatch_ev(s);
+            s->next_ev_tick = tick + rng_range(&s->random_state,
+                                    EV_MIN_SPAWN_TICKS, EV_MAX_SPAWN_TICKS);
+        }
         /* Freeze light/car state and the worker count for the current tick. */
         s->emergency_active = false;
         s->n_workers = SIM_NUM_INTERSECTIONS + SIM_MAX_CARS;
 
+        for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) {
+            if (s->evs[i].active) {
+                s->emergency_active = true;
+                s->n_workers++;
+            }
+        }
+        
         for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
             for (int b = 0; b < SIM_LIGHTS_PER_INTERSECTION; b++) {
                 s->colors[i * SIM_LIGHTS_PER_INTERSECTION + b] =
