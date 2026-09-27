@@ -13,7 +13,7 @@ static void usage(const char *prog) {
 }
 
 int main(int argc, char **argv) {
-    uint64_t ticks = 100;
+    uint64_t ticks = 200;
     uint64_t seed = 1;
 
     for (int i = 1; i < argc; i++) {
