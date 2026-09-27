@@ -13,6 +13,8 @@
     #define SIM_NUM_LIGHTS (SIM_NUM_INTERSECTIONS * SIM_LIGHTS_PER_INTERSECTION)
     #define SIM_MAX_CARS                16
     #define SIM_MAX_EMERGENCY_VEHICLES  3
+    #define SIM_SCREEN_WIDTH             70
+    #define SIM_SCREEN_HEIGHT            45
 
     typedef enum { LIGHT_RED = 0, LIGHT_GREEN = 1 } light_color_t;
 

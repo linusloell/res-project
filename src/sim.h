@@ -16,8 +16,8 @@
 #define TICK_NS 250000000L   /* 250 ms per simulation tick */
 #define CAR_MIN_SPAWN_TICKS  2
 #define CAR_MAX_SPAWN_TICKS  8
-#define EV_MIN_SPAWN_TICKS  30
-#define EV_MAX_SPAWN_TICKS  80
+#define EV_MIN_SPAWN_TICKS  20
+#define EV_MAX_SPAWN_TICKS  50
 
 struct sim {
     pthread_mutex_t lock;

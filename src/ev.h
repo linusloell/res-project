@@ -10,9 +10,11 @@ typedef struct {
     int     intersection_id;
     approach_t approach;
     int32_t position;
+    int32_t exit_position;
 } ev_t;
 
-void ev_dispatch(ev_t *e, int intersection_id, approach_t approach, int32_t route_len);
+void ev_dispatch(ev_t *e, int intersection_id, approach_t approach,
+                 int32_t exit_distance);
 
 bool ev_tick(ev_t *e);
 

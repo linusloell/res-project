@@ -19,8 +19,8 @@
 #define LOGIC_ROW_SCALE 2
 
 /* Compact road layout with reduced inter-road spacing. */
-#define GRID_W 70
-#define GRID_H 45
+#define GRID_W SIM_SCREEN_WIDTH
+#define GRID_H SIM_SCREEN_HEIGHT
 #define NCOLS  SIM_NUM_V_ROADS
 #define NROWS  SIM_NUM_H_ROADS
 
@@ -294,31 +294,25 @@ static void draw_evs(const sim_snapshot_t *snap) {
         int i = e->intersection_id % NCOLS;
         int j = e->intersection_id / NCOLS;
         int left = VROAD_L[i];
-        int right = left + VROAD_W - 1;
         int top = HROAD_T[j], bot = top + HROAD_H - 1;
         switch (e->approach) {
             case APPROACH_N: {
-                int seg_top = (j == 0) ? 0 : (HROAD_T[j - 1] + HROAD_H);
-                int row = clampi(top - 1 - e->position * LOGIC_ROW_SCALE, seg_top, top - 1);
+                int row = e->position * LOGIC_ROW_SCALE;
                 put(row, left + 2, GL_EV, C_EV);
                 break;
             }
             case APPROACH_S: {
-                int seg_bot = (j == NROWS - 1) ? (GRID_H - 1) : (HROAD_T[j + 1] - 1);
-                int row = clampi(bot + 1 + e->position * LOGIC_ROW_SCALE, bot + 1, seg_bot);
+                int row = GRID_H - 1 - e->position * LOGIC_ROW_SCALE;
                 put(row, left + 3, GL_EV, C_EV);
                 break;
             }
             case APPROACH_W: {
-                int seg_left = (i == 0) ? 0 : (VROAD_L[i - 1] + VROAD_W);
-                int col = clampi(left - 1 - e->position * LOGIC_COL_SCALE, seg_left, left - 1);
+                int col = e->position * LOGIC_COL_SCALE;
                 put(top + 1, col, GL_EV, C_EV);
                 break;
             }
             case APPROACH_E: {
-                int seg_right = (i == NCOLS - 1) ? (GRID_W - 1) : (VROAD_L[i + 1] - 1);
-                int col = clampi(left + VROAD_W + e->position * LOGIC_COL_SCALE,
-                                 left + VROAD_W, seg_right);
+                int col = GRID_W - 1 - e->position * LOGIC_COL_SCALE;
                 put(bot - 1, col, GL_EV, C_EV);
                 break;
             }

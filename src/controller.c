@@ -38,10 +38,6 @@ void *controller_thread_fn(void *arg) {
 
         pthread_mutex_lock(&s->lock);
 
-        if (tick >= s->next_car_tick) {
-            try_spawn_car(s);
-            s->next_car_tick = tick + rng_range(&s->random_state, CAR_MIN_SPAWN_TICKS, CAR_MAX_SPAWN_TICKS);
-        }
         if (tick >= s->next_ev_tick) {
             try_dispatch_ev(s);
             s->next_ev_tick = tick + rng_range(&s->random_state, EV_MIN_SPAWN_TICKS, EV_MAX_SPAWN_TICKS);
@@ -51,6 +47,10 @@ void *controller_thread_fn(void *arg) {
         int n_active_evs = 0;
         for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) {
             if (s->evs[i].active) n_active_evs++;
+        }
+        if (tick >= s->next_car_tick) {
+            if (n_active_evs == 0) try_spawn_car(s);
+            s->next_car_tick = tick + rng_range(&s->random_state, CAR_MIN_SPAWN_TICKS, CAR_MAX_SPAWN_TICKS);
         }
         s->emergency_active = (n_active_evs > 0);
         s->n_workers = SIM_NUM_INTERSECTIONS + SIM_MAX_CARS + n_active_evs;

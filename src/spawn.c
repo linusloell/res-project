@@ -38,9 +38,13 @@ bool try_dispatch_ev(sim_t *s) {
         case APPROACH_E: col = SIM_NUM_V_ROADS - 1; break;
     }
     intersection_id = row * SIM_NUM_V_ROADS + col;
-    int32_t route_len = car_edge_distance(intersection_id, approach) + 1;
-
-    ev_dispatch(&s->evs[slot], intersection_id, approach, route_len);
+    /* Position is progress from the entry edge. The renderer maps this onto
+     * the full screen axis; stop after the next step would put the EV beyond
+     * that axis. */
+    int32_t exit_distance = (approach == APPROACH_N || approach == APPROACH_S)
+                          ? (SIM_SCREEN_HEIGHT + 1) / 2
+                          : (SIM_SCREEN_WIDTH + 2) / 3;
+    ev_dispatch(&s->evs[slot], intersection_id, approach, exit_distance);
     pthread_cond_signal(&s->ev_dispatch_cv[slot]);
     return true;
 }
