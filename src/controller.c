@@ -56,9 +56,16 @@ void *controller_thread_fn(void *arg) {
         s->n_workers = SIM_NUM_INTERSECTIONS + SIM_MAX_CARS + n_active_evs;
 
         for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
+            /* Workers advance the real lights after this tick is released.
+             * Predict that same transition here so cars see the color that
+             * will actually be displayed for this tick, not the prior one. */
+            traffic_light_t next_light = s->intersections[i];
+            if (s->emergency_active) traffic_light_pause(&next_light);
+            else traffic_light_resume(&next_light);
+            traffic_light_tick(&next_light);
             for (int b = 0; b < SIM_LIGHTS_PER_INTERSECTION; b++) {
                 s->colors[i * SIM_LIGHTS_PER_INTERSECTION + b] =
-                    traffic_light_color(&s->intersections[i], (approach_t)b);
+                    traffic_light_color(&next_light, (approach_t)b);
             }
         }
 

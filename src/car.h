@@ -25,6 +25,7 @@ typedef struct {
 } car_t;
 
 void car_spawn(car_t *c, int intersection_id, approach_t approach, int32_t route_len);
+int32_t car_edge_distance(int intersection_id, approach_t approach);
 
 /* Halt the car for an emergency vehicle, saving its current position. */
 void car_hold(car_t *c);

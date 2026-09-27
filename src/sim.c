@@ -91,6 +91,7 @@ int sim_snapshot(const sim_t *s, sim_snapshot_t *out) {
         out->evs[i] = (emergency_snapshot_t){
             .active          = e->active,
             .intersection_id = e->intersection_id,
+            .approach        = e->approach,
             .position        = e->position,
         };
     }

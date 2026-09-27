@@ -17,7 +17,11 @@
 
 ### traffic lights logic:
 
-2 states: green/red. Fixed cycle pattern, swaps green <-> red, 2 exec time for each. When emergency arrive -> light paused and saves current states. When emergency finish, ligth resumes from the saved pahrase and keep cyclings.
+Traffic lights alternate north/south and east/west green phases. After each
+green phase, both directions stay red for a clearance interval so cars can
+finish crossing before the opposing direction gets green. When an emergency
+vehicle arrives, the light pauses and saves its current phase; when the
+emergency clears, it resumes from that saved phase.
 
 ### Cars driver logic:
 

@@ -5,8 +5,13 @@
 #include <stdint.h>
 
 #define LIGHT_PHASE_TICKS 10
+#define LIGHT_CLEARANCE_TICKS 3
 
-typedef enum { PHASE_NS_GREEN = 0, PHASE_EW_GREEN = 1 } phase_t;
+typedef enum {
+    PHASE_NS_GREEN = 0,
+    PHASE_EW_GREEN = 1,
+    PHASE_ALL_RED = 2
+} phase_t;
 
 typedef struct {
     phase_t  phase;
@@ -17,6 +22,8 @@ typedef struct {
     bool     paused;
     phase_t  saved_phase;
     uint32_t saved_ticks_in_phase;
+    phase_t  next_phase;
+    phase_t  saved_next_phase;
 } traffic_light_t;
 
 void traffic_light_init(traffic_light_t *f, phase_t initial);

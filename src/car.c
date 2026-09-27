@@ -22,6 +22,14 @@ static bool next_intersection(int id, approach_t a, int *out) {
     return true;
 }
 
+/* Logical position 6 maps to the outermost rendered cell for every entry
+ * lane in the compact 2x2 grid. */
+int32_t car_edge_distance(int intersection_id, approach_t approach) {
+    (void)intersection_id;
+    (void)approach;
+    return 6;
+}
+
 void car_spawn(car_t *c, int intersection_id, approach_t approach, int32_t route_len) {
     c->active = true;
     c->intersection_id = intersection_id;
@@ -78,15 +86,28 @@ void car_tick(car_t *c, light_color_t approach_light) {
             return;
         }
         c->intersection_id = next;
+        c->route_len = car_edge_distance(next, c->approach) + 1;
         c->position = c->route_len;
         c->state    = CAR_MOVING;
         return;
     }
 
     /* Still on the approach lane, driving down to the stop line. */
-    if (c->position > 0) {
+    if (c->position > 1) {
         c->position--;
         c->state = CAR_MOVING;
+        return;
+    }
+
+    /* Hold one logical cell before the stop line on red. This avoids drawing
+     * a stopped car on top of the traffic-light/stop-line marker. */
+    if (c->position == 1) {
+        if (approach_light == LIGHT_GREEN) {
+            c->state = CAR_CROSSING;
+            c->cross_left = CAR_CROSS_TICKS;
+        } else {
+            c->state = CAR_STOPPED_LIGHT;
+        }
         return;
     }
 
@@ -95,6 +116,7 @@ void car_tick(car_t *c, light_color_t approach_light) {
         c->state      = CAR_CROSSING;
         c->cross_left = CAR_CROSS_TICKS;
     } else {
+        c->position = 1;
         c->state = CAR_STOPPED_LIGHT;
     }
 }

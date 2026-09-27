@@ -39,6 +39,7 @@
     typedef struct {
         bool active;
         int intersection_id;
+        approach_t approach;
         int32_t position;
     } emergency_snapshot_t;
 

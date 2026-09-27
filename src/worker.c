@@ -99,7 +99,7 @@ void *car_thread_fn(void *arg) {
 
                 /* Avoid visual/logical overlap in the intersection box by
                  * admitting one crossing car per intersection at a time. */
-                if (c->state != CAR_CROSSING && c->position == 0 &&
+                if (c->state != CAR_CROSSING && c->position <= 1 &&
                     approach_light == LIGHT_GREEN &&
                     intersection_box_busy(s, c->intersection_id, id)) {
                     approach_light = LIGHT_RED;

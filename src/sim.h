@@ -13,16 +13,11 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-#define TICK_NS 100000000L   /* 100 ms par tick */
-#define CAR_MIN_ROUTE 3
-#define CAR_MAX_ROUTE 8
-#define EV_MIN_ROUTE 4
-#define EV_MAX_ROUTE 8
-
+#define TICK_NS 250000000L   /* 250 ms per simulation tick */
 #define CAR_MIN_SPAWN_TICKS  2
 #define CAR_MAX_SPAWN_TICKS  8
-#define EV_MIN_SPAWN_TICKS  15
-#define EV_MAX_SPAWN_TICKS  40
+#define EV_MIN_SPAWN_TICKS  30
+#define EV_MAX_SPAWN_TICKS  80
 
 struct sim {
     pthread_mutex_t lock;

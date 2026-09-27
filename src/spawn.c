@@ -2,7 +2,8 @@
 #include "my.h"
 #include "random_gen.h"
 
-static bool spawn_slot_free(const sim_t *s, int intersection_id, approach_t approach, int32_t route_len) {
+static bool spawn_slot_free(const sim_t *s, int intersection_id, approach_t approach,
+                            int32_t edge_position) {
     for (int i = 0; i < SIM_MAX_CARS; i++) {
         const car_t *c = &s->cars[i];
         if (!c->active) continue;
@@ -12,7 +13,7 @@ static bool spawn_slot_free(const sim_t *s, int intersection_id, approach_t appr
 
         if (c->intersection_id == intersection_id &&
             c->approach == approach &&
-            c->position == route_len) {
+            c->position >= edge_position) {
             return false;
         }
     }
@@ -26,10 +27,20 @@ bool try_dispatch_ev(sim_t *s) {
     }
     if (slot < 0) return false;
 
-    int intersection_id = (int)rng_range(&s->random_state, 0, SIM_NUM_INTERSECTIONS - 1);
-    int32_t route_len = (int32_t)rng_range(&s->random_state, EV_MIN_ROUTE, EV_MAX_ROUTE);
+    approach_t approach = (approach_t)rng_range(&s->random_state, 0, SIM_LIGHTS_PER_INTERSECTION - 1);
+    int row = (int)rng_range(&s->random_state, 0, SIM_NUM_H_ROADS - 1);
+    int col = (int)rng_range(&s->random_state, 0, SIM_NUM_V_ROADS - 1);
+    int intersection_id;
+    switch (approach) {
+        case APPROACH_N: row = 0; break;
+        case APPROACH_S: row = SIM_NUM_H_ROADS - 1; break;
+        case APPROACH_W: col = 0; break;
+        case APPROACH_E: col = SIM_NUM_V_ROADS - 1; break;
+    }
+    intersection_id = row * SIM_NUM_V_ROADS + col;
+    int32_t route_len = car_edge_distance(intersection_id, approach) + 1;
 
-    ev_dispatch(&s->evs[slot], intersection_id, route_len);
+    ev_dispatch(&s->evs[slot], intersection_id, approach, route_len);
     pthread_cond_signal(&s->ev_dispatch_cv[slot]);
     return true;
 }
@@ -45,9 +56,10 @@ bool try_spawn_car(sim_t *s) {
     for (int attempt = 0; attempt < 16; attempt++) {
         int intersection_id = (int)rng_range(&s->random_state, 0, SIM_NUM_INTERSECTIONS - 1);
         approach_t approach = (approach_t)rng_range(&s->random_state, 0, SIM_LIGHTS_PER_INTERSECTION - 1);
-        int32_t route_len = (int32_t)rng_range(&s->random_state, CAR_MIN_ROUTE, CAR_MAX_ROUTE);
+        int32_t edge_position = car_edge_distance(intersection_id, approach);
+        int32_t route_len = edge_position + 1;
 
-        if (!spawn_slot_free(s, intersection_id, approach, route_len)) continue;
+        if (!spawn_slot_free(s, intersection_id, approach, edge_position)) continue;
 
         car_spawn(&s->cars[slot], intersection_id, approach, route_len);
         return true;
