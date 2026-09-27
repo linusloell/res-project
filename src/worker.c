@@ -97,21 +97,24 @@ void *car_thread_fn(void *arg) {
                 light_color_t approach_light =
                     s->colors[c->intersection_id * SIM_LIGHTS_PER_INTERSECTION + c->approach];
 
-                /* Avoid visual/logical overlap in the intersection box by
-                 * admitting one crossing car per intersection at a time. */
-                if (c->state != CAR_CROSSING && c->position <= 1 &&
-                    approach_light == LIGHT_GREEN &&
-                    intersection_box_busy(s, c->intersection_id, id)) {
-                    approach_light = LIGHT_RED;
-                }
+                bool box_busy = intersection_box_busy(s, c->intersection_id, id);
 
-                /* Keep a one-cell gap in each incoming lane so queued cars
-                 * do not collapse into the same rendered position. */
-                if (c->state != CAR_CROSSING && c->state != CAR_EXITING && c->position > 0 &&
-                    incoming_lane_pos_busy(s, c->intersection_id, c->approach, c->position - 1, id)) {
-                    c->state = CAR_STOPPED_LIGHT;
+                /* A car that already crossed the signal line waits at the
+                 * edge of the box until it can clear; the signal no longer
+                 * applies to it. */
+                if (c->state != CAR_CROSSING && c->state != CAR_EXITING &&
+                    c->position == 0 && box_busy) {
+                    /* Keep its committed position until the crossing clears. */
                 } else {
-                    car_tick(c, approach_light);
+                    /* Keep a one-cell gap in each incoming lane so queued
+                     * cars do not collapse into the same rendered position. */
+                    if (c->state != CAR_CROSSING && c->state != CAR_EXITING && c->position > 0 &&
+                        incoming_lane_pos_busy(s, c->intersection_id, c->approach,
+                                               c->position - 1, id)) {
+                        c->state = CAR_STOPPED_LIGHT;
+                    } else {
+                        car_tick(c, approach_light);
+                    }
                 }
             }
         }

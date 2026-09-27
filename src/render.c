@@ -251,6 +251,10 @@ static void draw_cars(const sim_snapshot_t *snap) {
                 int seg_top = (j == 0) ? 0 : (HROAD_T[j - 1] + HROAD_H);
                 int stop = top - 1;
                 int row = clampi(stop - pos * LOGIC_ROW_SCALE, seg_top, stop);
+                /* Offset the whole vertical lane upstream by one canvas row,
+                 * so reaching the stop point does not require a state-based
+                 * sprite jump. */
+                row = clampi(row - 1, seg_top, stop);
                 draw_vcar(row, left + 1, col);
                 break;
             }
@@ -259,6 +263,7 @@ static void draw_cars(const sim_snapshot_t *snap) {
                                                : (HROAD_T[j + 1] - 1);
                 int stop = bot + 1;
                 int row = clampi(stop + pos * LOGIC_ROW_SCALE, stop, seg_bot);
+                row = clampi(row + 1, stop, seg_bot);
                 draw_vcar(row, left + 3, col);
                 break;
             }

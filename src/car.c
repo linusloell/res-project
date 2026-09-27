@@ -99,24 +99,20 @@ void car_tick(car_t *c, light_color_t approach_light) {
         return;
     }
 
-    /* Hold one logical cell before the stop line on red. This avoids drawing
-     * a stopped car on top of the traffic-light/stop-line marker. */
+    /* Move up to the stop line. The light controls entry into the box, not
+     * whether a car may approach the line. */
     if (c->position == 1) {
-        if (approach_light == LIGHT_GREEN) {
-            c->state = CAR_CROSSING;
-            c->cross_left = CAR_CROSS_TICKS;
-        } else {
-            c->state = CAR_STOPPED_LIGHT;
-        }
+        c->position = 0;
+        c->state = CAR_MOVING;
         return;
     }
 
-    /* At the stop line: enter the intersection only on green. */
+    /* At the line, wait on red. Once a car enters on green, CAR_CROSSING
+     * carries it through to the far side even if the signal changes. */
     if (approach_light == LIGHT_GREEN) {
-        c->state      = CAR_CROSSING;
+        c->state = CAR_CROSSING;
         c->cross_left = CAR_CROSS_TICKS;
     } else {
-        c->position = 1;
         c->state = CAR_STOPPED_LIGHT;
     }
 }
