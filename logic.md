@@ -53,10 +53,13 @@ Emergency is the most highest prioritary process. will share his status with tra
 
 ## ThreadPriority order:
 
-controller > emergency > traffic light > cars
+Periodic threads use rate-monotonic priorities: the shorter the period, the
+higher the fixed priority. The controller, traffic lights, and cars currently
+all run once per 100 ms tick, so their periods tie; ties are resolved as
+controller > traffic light > cars. Emergency vehicles are aperiodic and are
+assigned the highest priority when dispatched.
 
 ## Shared data:
 
 - ligths_state flag
 - map
-

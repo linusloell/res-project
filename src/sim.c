@@ -112,27 +112,27 @@ int sim_run(sim_t *s, uint64_t ticks, uint64_t seed) {
     thread_args_t inter_args[SIM_NUM_INTERSECTIONS];
     for (int i = 0; i < SIM_NUM_INTERSECTIONS; i++) {
         inter_args[i] = (thread_args_t){ .sim = s, .index = i };
-        rt_thread_create(&s->intersection_threads[i], RT_PRIO_LIGHT, intersection_thread_fn, &inter_args[i]);
+        rt_thread_create(&s->intersection_threads[i], rate_monotonic_priority(RT_TASK_LIGHT), intersection_thread_fn, &inter_args[i]);
     }
 
     // create car threads
     thread_args_t car_args[SIM_MAX_CARS];
     for (int i = 0; i < SIM_MAX_CARS; i++) {
         car_args[i] = (thread_args_t){ .sim = s, .index = i };
-        rt_thread_create(&s->car_threads[i], RT_PRIO_CAR, car_thread_fn, &car_args[i]);
+        rt_thread_create(&s->car_threads[i], rate_monotonic_priority(RT_TASK_CAR), car_thread_fn, &car_args[i]);
     }
 
     // create ev threads
     thread_args_t ev_args[SIM_MAX_EMERGENCY_VEHICLES];
     for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) {
         ev_args[i] = (thread_args_t){ .sim = s, .index = i };
-        rt_thread_create(&s->ev_threads[i], RT_PRIO_EV, ev_thread_fn, &ev_args[i]);
+        rt_thread_create(&s->ev_threads[i], rate_monotonic_priority(RT_TASK_EMERGENCY), ev_thread_fn, &ev_args[i]);
     }
 
     /* Controller: highest priority, owns the tick clock and the UI.
      * It flips s->running to false on its own once the run is over. */
     thread_args_t ctrl_args = { .sim = s, .index = 0 };
-    rt_thread_create(&s->controller_thread, RT_PRIO_CONTROLLER, controller_thread_fn, &ctrl_args);
+    rt_thread_create(&s->controller_thread, rate_monotonic_priority(RT_TASK_CONTROLLER), controller_thread_fn, &ctrl_args);
 
     pthread_join(s->controller_thread, NULL);
 
