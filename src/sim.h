@@ -26,8 +26,7 @@ struct sim {
     pthread_mutex_t lock;
     bool running;
     bool emergency_active;
-    uint64_t tick;
-    uint64_t total_ticks;
+    uint64_t total_seconds;
     uint64_t deadline_misses[RT_TASK_COUNT];
     uint64_t random_state;
     uint64_t next_car_ns;

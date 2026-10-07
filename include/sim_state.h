@@ -46,7 +46,7 @@
     } emergency_snapshot_t;
 
     typedef struct {
-        uint64_t tick;
+        uint64_t elapsed_seconds;
         bool     emergency_active; // global freeze: any emergency vehicle active
         uint64_t deadline_misses[5];
 

@@ -4,8 +4,8 @@
 #include "sim_state.h"
 #include <stdint.h>
 
-#define LIGHT_PHASE_TICKS 10
-#define LIGHT_CLEARANCE_TICKS 3
+#define LIGHT_PHASE_STEPS 10
+#define LIGHT_CLEARANCE_STEPS 3
 
 typedef enum {
     PHASE_NS_GREEN = 0,
@@ -15,13 +15,13 @@ typedef enum {
 
 typedef struct {
     phase_t  phase;
-    uint32_t ticks_in_phase;
+    uint32_t steps_in_phase;
 
     /* Emergency freeze: the cycle is suspended and the phase it was stopped in
      * is kept aside, so the light resumes exactly where it left off. */
     bool     paused;
     phase_t  saved_phase;
-    uint32_t saved_ticks_in_phase;
+    uint32_t saved_steps_in_phase;
     phase_t  next_phase;
     phase_t  saved_next_phase;
 } traffic_light_t;
@@ -34,8 +34,8 @@ void traffic_light_pause(traffic_light_t *f);
 /* Restore the saved phase and resume cycling. No-op if not paused. */
 void traffic_light_resume(traffic_light_t *f);
 
-/* Advances the cycle by one tick; does nothing while paused. */
-void traffic_light_tick(traffic_light_t *f);
+/* Advances the cycle by one step; does nothing while paused. */
+void traffic_light_step(traffic_light_t *f);
 
 light_color_t traffic_light_color(const traffic_light_t *f, approach_t a);
 

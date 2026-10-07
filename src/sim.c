@@ -22,7 +22,11 @@ void sim_destroy(sim_t *s) {
 int sim_snapshot(const sim_t *s, sim_snapshot_t *out) {
     memset(out, 0, sizeof *out);
 
-    out->tick = s->tick;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    uint64_t elapsed_seconds = (uint64_t)(now.tv_sec - s->epoch.tv_sec);
+    if (now.tv_nsec < s->epoch.tv_nsec) elapsed_seconds--;
+    out->elapsed_seconds = elapsed_seconds < s->total_seconds ? elapsed_seconds : s->total_seconds;
     out->emergency_active = s->emergency_active;
     memcpy(out->deadline_misses, s->deadline_misses, sizeof out->deadline_misses);
 
@@ -58,9 +62,9 @@ int sim_snapshot(const sim_t *s, sim_snapshot_t *out) {
     return 0;
 }
 
-int sim_run(sim_t *s, uint64_t ticks, uint64_t seed) {
+int sim_run(sim_t *s, uint64_t seconds, uint64_t seed) {
     s->running = true;
-    s->total_ticks = ticks;
+    s->total_seconds = seconds;
     s->random_state = seed ? seed : 1;
     s->next_car_ns = rng_range(&s->random_state, CAR_MIN_SPAWN_MS, CAR_MAX_SPAWN_MS) * 1000000ULL;
     s->next_ev_ns = rng_range(&s->random_state, EV_MIN_SPAWN_MS, EV_MAX_SPAWN_MS) * 1000000ULL;

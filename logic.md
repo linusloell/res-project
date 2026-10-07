@@ -21,10 +21,10 @@ are counted by task class and shown in the UI and final summary. The renderer
 has a shorter period than the light task, so RM gives it the highest fixed
 priority; its terminal output is included in its deadline measurement.
 
-Signal phase and clearance lengths remain counts of light releases; car
-crossing length remains counts of car releases. Random spawn intervals are
-elapsed milliseconds. `--ticks` is retained as the number of one-second UI
-frames, so total run time is approximately the supplied number of seconds.
+Signal phase and clearance lengths are measured in light releases; car crossing
+length is measured in car releases. Random spawn intervals are elapsed
+milliseconds. `--seconds` sets the simulation run time, with the controller
+ending the run on a one-second boundary.
 
 The configured priorities use POSIX `SCHED_FIFO`. If the process lacks the
 required privileges, threads run under `SCHED_OTHER`, where the numeric RM

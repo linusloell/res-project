@@ -9,7 +9,7 @@ void ev_dispatch(ev_t *e, int intersection_id, approach_t approach,
     e->exit_position = exit_distance;
 }
 
-bool ev_tick(ev_t *e) {
+bool ev_step(ev_t *e) {
     if (!e->active) return false;
     e->position++;
     if (e->position >= e->exit_position) {

@@ -47,7 +47,7 @@ void *intersection_thread_fn(void *arg) {
         traffic_light_t *light = &s->intersections[a->index];
         if (s->emergency_active) traffic_light_pause(light);
         else traffic_light_resume(light);
-        traffic_light_tick(light);
+        traffic_light_step(light);
         for (int approach = 0; approach < SIM_LIGHTS_PER_INTERSECTION; approach++)
             s->colors[a->index * SIM_LIGHTS_PER_INTERSECTION + approach] =
                 traffic_light_color(light, (approach_t)approach);
@@ -99,7 +99,7 @@ void *car_thread_fn(void *arg) {
                     if (c->state != CAR_CROSSING && c->state != CAR_EXITING && c->position > 0 &&
                         incoming_lane_pos_busy(s, c->intersection_id, c->approach, c->position - 1, a->index))
                         c->state = CAR_STOPPED_LIGHT;
-                    else car_tick(c, color);
+                    else car_step(c, color);
                 }
             }
         }
@@ -128,7 +128,7 @@ void *ev_thread_fn(void *arg) {
             try_dispatch_ev(s);
             s->next_ev_ns = elapsed + rng_range(&s->random_state, EV_MIN_SPAWN_MS, EV_MAX_SPAWN_MS) * 1000000ULL;
         }
-        for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) if (s->evs[i].active) ev_tick(&s->evs[i]);
+        for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) if (s->evs[i].active) ev_step(&s->evs[i]);
         s->emergency_active = false;
         for (int i = 0; i < SIM_MAX_EMERGENCY_VEHICLES; i++) s->emergency_active |= s->evs[i].active;
         account_deadline(s, RT_TASK_EMERGENCY, &deadline);
@@ -142,7 +142,7 @@ void *controller_thread_fn(void *arg) {
     sim_t *s = a->sim;
     struct timespec release = s->epoch;
     uint64_t period = rt_task_period_ns(RT_TASK_CONTROLLER);
-    for (uint64_t frame = 1; frame <= s->total_ticks; frame++) {
+    for (uint64_t frame = 1; frame <= s->total_seconds; frame++) {
         release_wait(&release, period);
         struct timespec deadline = release;
         add_ns(&deadline, period);
@@ -153,7 +153,6 @@ void *controller_thread_fn(void *arg) {
             if (!s->emergency_active) try_spawn_car(s);
             s->next_car_ns = elapsed + rng_range(&s->random_state, CAR_MIN_SPAWN_MS, CAR_MAX_SPAWN_MS) * 1000000ULL;
         }
-        s->tick = frame;
         account_deadline(s, RT_TASK_CONTROLLER, &deadline);
         pthread_mutex_unlock(&s->lock);
     }
@@ -168,7 +167,7 @@ void *renderer_thread_fn(void *arg) {
     sim_t *s = a->sim;
     struct timespec release = s->epoch;
     uint64_t period = rt_task_period_ns(RT_TASK_RENDER);
-    uint64_t releases = s->total_ticks * (CONTROLLER_PERIOD_NS / period);
+    uint64_t releases = s->total_seconds * (CONTROLLER_PERIOD_NS / period);
     for (uint64_t frame = 0; frame < releases && is_running(s); frame++) {
         release_wait(&release, period);
         struct timespec deadline = release;

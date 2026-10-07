@@ -60,7 +60,7 @@ void car_release(car_t *c) {
     c->held = false;
 }
 
-void car_tick(car_t *c, light_color_t approach_light) {
+void car_step(car_t *c, light_color_t approach_light) {
     if (!c->active) return;
 
     /* Final leg after the last intersection: keep drawing while the car
@@ -111,7 +111,7 @@ void car_tick(car_t *c, light_color_t approach_light) {
      * carries it through to the far side even if the signal changes. */
     if (approach_light == LIGHT_GREEN) {
         c->state = CAR_CROSSING;
-        c->cross_left = CAR_CROSS_TICKS;
+        c->cross_left = CAR_CROSS_STEPS;
     } else {
         c->state = CAR_STOPPED_LIGHT;
     }
