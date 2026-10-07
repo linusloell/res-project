@@ -9,6 +9,7 @@ typedef struct {
 } thread_args_t;
 
 void *controller_thread_fn(void *arg);
+void *renderer_thread_fn(void *arg);
 void *intersection_thread_fn(void *arg);
 void *car_thread_fn(void *arg);
 void *ev_thread_fn(void *arg);

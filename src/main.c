@@ -8,7 +8,7 @@
 
 static void usage(const char *prog) {
    fprintf(stderr, "usage: %s [--ticks N] [--seed N]\n"
-                "  --ticks N   run for N ticks (default 100)\n"
+                "  --ticks N   run for N one-second frames (default 200)\n"
                 "  --seed N    PRNG seed for reproducible runs (default 1)\n", prog);
 }
 
@@ -38,8 +38,10 @@ int main(int argc, char **argv) {
 
     sim_snapshot_t snapshot;
     sim_snapshot(&sim, &snapshot);
-    fprintf(stderr, "ticks: %" PRIu64 ", deadline misses: %" PRIu64 "\n",
-            snapshot.tick, snapshot.deadline_misses);
+    fprintf(stderr, "seconds: %" PRIu64 " | deadline misses L/E/C/CTRL/RENDER: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "\n",
+            snapshot.tick, snapshot.deadline_misses[0], snapshot.deadline_misses[1],
+            snapshot.deadline_misses[2], snapshot.deadline_misses[3],
+            snapshot.deadline_misses[4]);
 
     sim_destroy(&sim);
     return 0;

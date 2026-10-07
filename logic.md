@@ -1,69 +1,32 @@
-# rtes project - Traffic Simulation
+# Real-time scheduling model
 
-## Tasks:
+The simulation uses independent periodic releases with fixed rate-monotonic
+priorities. Jobs wait on absolute `CLOCK_MONOTONIC` release times, so execution
+time does not accumulate as release drift. Shared state updates are protected
+by the simulation mutex; there is no global release/completion barrier.
 
-### perdioc tasks:
+| Task class | Period / deadline | Priority | Work |
+| --- | ---: | ---: | --- |
+| Renderer | 50 ms | Highest | Render a fresh state snapshot (20 frames/s) |
+| Traffic lights | 100 ms | Next | Advance each intersection and publish signal colors |
+| Emergency server | 250 ms | Next | Dispatch due emergency arrivals and advance active vehicles |
+| Cars | 250 ms | Next | Advance each car independently |
+| Controller | 1 s | Lowest | Spawn cars and end the run |
 
-- renderer
-- controller
-- traffic light
-- cars
+The emergency task is a periodic server for aperiodic arrivals. Its execution
+is bounded to one dispatch scan and one movement step per active vehicle per
+release. Equal periods use the documented tie order: emergency server before
+cars. Each job has an implicit deadline equal to its period. Deadline misses
+are counted by task class and shown in the UI and final summary. The renderer
+has a shorter period than the light task, so RM gives it the highest fixed
+priority; its terminal output is included in its deadline measurement.
 
-### aperiodic tasks:
+Signal phase and clearance lengths remain counts of light releases; car
+crossing length remains counts of car releases. Random spawn intervals are
+elapsed milliseconds. `--ticks` is retained as the number of one-second UI
+frames, so total run time is approximately the supplied number of seconds.
 
-- emergency vehicles
-
-## Logic:
-
-### traffic lights logic:
-
-Traffic lights alternate north/south and east/west green phases. After each
-green phase, both directions stay red for a clearance interval so cars can
-finish crossing before the opposing direction gets green. When an emergency
-vehicle arrives, the light pauses and saves its current phase; when the
-emergency clears, it resumes from that saved phase.
-
-### Cars driver logic:
-
-cars move when light is green, holds when red. At each ticks the car move; only if there is no emergency. If there is an emergency the car old its position. Need to save the current position when stoped. Resumes from its position when the emergency is finish.
-
-### Emergency vehicles logic:
-
-Emergency is the most highest prioritary process. will share his status with traffic light and cars, to halts car in motion and pause the traffic light cycles.
-
-### Controller
-
-- intitializes the system
-- spawns emergency vehicle tasks randomly
-- renders the UI
-
-## Threads repartition:
-
-### Intersections:
-
-1 thread/intersections (4 in our case). Periodic task. Will containt 16 light state, light_state[16] (1 per traffic ligth)
-
-### Cars:
-
-1 threads/cars. Periodic task.
-
-### Emergency vehicles:
-
-- aperiodic task.
-
-### Controller:
-
-1 thread. Periodic task.
-
-## ThreadPriority order:
-
-Periodic threads use rate-monotonic priorities: the shorter the period, the
-higher the fixed priority. The controller, traffic lights, and cars currently
-all run once per 100 ms tick, so their periods tie; ties are resolved as
-controller > traffic light > cars. Emergency vehicles are aperiodic and are
-assigned the highest priority when dispatched.
-
-## Shared data:
-
-- ligths_state flag
-- map
+The configured priorities use POSIX `SCHED_FIFO`. If the process lacks the
+required privileges, threads run under `SCHED_OTHER`, where the numeric RM
+priority ordering is not enforced. This project demonstrates task releases and
+fixed-priority scheduling; it does not claim hard real-time guarantees.

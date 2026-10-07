@@ -45,7 +45,6 @@ bool try_dispatch_ev(sim_t *s) {
                           ? (SIM_SCREEN_HEIGHT + 1) / 2
                           : (SIM_SCREEN_WIDTH + 2) / 3;
     ev_dispatch(&s->evs[slot], intersection_id, approach, exit_distance);
-    pthread_cond_signal(&s->ev_dispatch_cv[slot]);
     return true;
 }
 

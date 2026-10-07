@@ -327,9 +327,11 @@ static void draw_header(const sim_snapshot_t *snap) {
     for (int k = 0; k < snap->num_cars; k++) if (snap->cars[k].active) cars++;
     for (int k = 0; k < snap->num_evs; k++)  if (snap->evs[k].active)  evs++;
 
-    printf(C_HEADER "tick %-6" PRIu64 C_RESET
-           "  cars:%-2d  evs:%d  misses:%" PRIu64 "%s\033[K\n",
-           snap->tick, cars, evs, snap->deadline_misses,
+    printf(C_HEADER "time %-6" PRIu64 "s" C_RESET
+           "  cars:%-2d  evs:%d  misses L/E/C/CTRL/R:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "%s\033[K\n",
+           snap->tick, cars, evs,
+           snap->deadline_misses[0], snap->deadline_misses[1],
+           snap->deadline_misses[2], snap->deadline_misses[3], snap->deadline_misses[4],
            snap->emergency_active ? "   \033[1;31m[EMERGENCY FREEZE]" C_RESET
                                   : "");
 }

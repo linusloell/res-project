@@ -48,7 +48,7 @@
     typedef struct {
         uint64_t tick;
         bool     emergency_active; // global freeze: any emergency vehicle active
-        uint64_t deadline_misses;
+        uint64_t deadline_misses[5];
 
         light_color_t lights[SIM_NUM_LIGHTS];
 
