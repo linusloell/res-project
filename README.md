@@ -21,7 +21,7 @@ A C project built with Make, set up to run inside a Dev Container.
 ## Dev Container
 
 Open the folder in VS Code / Cursor and choose **Reopen in Container**
-(or run *Dev Containers: Reopen in Container* from the command palette).
+(or run _Dev Containers: Reopen in Container_ from the command palette).
 The image is built from `.devcontainer/Dockerfile` and ships with GCC, Make,
 GDB, Valgrind, cppcheck, and clang-tidy. Add more packages to the Dockerfile
 (e.g. a cross-compiler toolchain) as the project grows.
@@ -34,3 +34,7 @@ make BUILD=release
 make run        # build and run
 make clean      # remove build output
 ```
+
+## AI usage disclamer
+
+This project was build with the help of AI models.
